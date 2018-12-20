@@ -16,6 +16,13 @@ var connection = mysql.createConnection({
     database: "bamazon_db"
 });
 
+// connect to the mysql server and sql database
+connection.connect(function (err) {
+    if (err) throw err;
+    // run the start function after the connection is made to prompt the user
+    start();
+});
+
 function start() {
     // connect to the mysql server and sql database
     connection.query("SELECT * FROM products", function (err, res) {
@@ -28,80 +35,76 @@ function start() {
         }
 
         console.log(" ");
-        inquirer.prompt([
-            {
-                type: "input",
-                name: "id",
-                message: "What is the ID of the product you would like to buy?",
-                validate: function (value) {
-                    if (isNaN(value) === false) {
-                        return true;
-                    }
-                    return false;
+        // function start() {
+        inquirer.prompt([{
+            type: "input",
+            name: "id",
+            message: "What is the ID of the product you would like to buy?",
+            validate: function (value) {
+                if (isNaN(value) === false) {
+                    return true;
                 }
-            },
-            {
-                type: "input",
-                name: "quantity",
-                message: "How many would you like to buy?",
-                validate: function (value) {
-                    if (isNaN(value) === false) {
-                        return true;
-                    }
-                    return false;
-                }
+                return false;
             }
-        ])
-        // .then(function (input) {
-        //     var item = (input.id) - 1;
-        //     var numberUnits = parseInt(input.quantity);
-        //     var totalPurchase = parseFloat(((res[item].price) * numberUnits).toFixed(2));
+        },
+        {
+            type: "input",
+            name: "quantity",
+            message: "How many would you like to buy?",
+            validate: function (value) {
+                if (isNaN(value) === false) {
+                    return true;
+                }
+                return false;
+            }
+        }])
 
-        //check if number of items are available
-        // if (res[item].stock_quantity - numberUnits) {
-        //     connection.query("UPDATE products SET ? WHERE ?", [
-        //         { stock_quantity: (res[item].stock_quantity - numberUnits) },
-        //         { ID: ans.id }
-        //     ], function (err, result) {
-        //         if (err) throw err;
+            .then(function (input) {
+                console.log("Customer has selected : \n   id = " + input.id + "\n  quantity = " + input.quantity);
+                var found = false;
+                var newquantity;
+                var product;
+                for (var i = 0; i < res.length; i++) {
+                    if (res[i].id === parseInt(input.id)) {
+                        found = true;
+                        product = res[i];
+                        newquantity = res[i].stock_quantity - input.quantity;
+                    }
+                }
+                var item = input.id;
 
-        var item = input.id;
-        var quantity = input.stock_quantity;
+                if (!found) {
+                    console.log("ERROR: Invalid Item. Please select a valid item.");
+                    return start();
 
-        if (data.length === 0) {
-            console.log("ERROR: Invalid Item. Please select a valid item.");
-            displayInventory();
-
-        } else {
-            var productData = data[0];
-            // consolelog.("productData = " + JSON.stringify(productData));
-            // consolelog.("productData.stock_quantity = " + productData.stock_quantity);
-        }
-
-        // If the quantity requested is in stock
-        if (quantity <= product.stock_quantity) {
-            console.log("Congratulations!  The item you requested is in stock!");
+                } 
 
 
-            // Update the product quantity string
-            var updateProductQuantity = 'UPDATE products SET stock_quantity = ' + (product.stock_quantity - quantity) + ' WHERE id = " ' + item;
+                // If the quantity requested is in stock
+                if (newquantity >= 0) {
+                    console.log("Congratulations!  The item you requested is in stock!");
 
-            // Update the inventory
-            connection.query(updateProductQuantity, function (err, data) {
-                if (err) throw err;
+                    // Update the product quantity string
+                    var updateProductQuantity = 'UPDATE products SET stock_quantity = ' + (newquantity) + ' WHERE id = ' + input.id;
 
-                // } = 'UPDATE products SET stock_quantity = ' + (product))
-                console.log("YAY!  Your total is $" + product.price * quantity + ". Thank you for shopping with Bamazon.");
+                    // Update the inventory
+                    connection.query(updateProductQuantity, function (err, data) {
+                        if (err) throw err;
 
-                connection.end();
+                        // } = 'UPDATE products SET stock_quantity = ' + (product))
+                        console.log("YAY!  Your total is $" + product.price * input.quantity + ". Thank you for shopping with Bamazon.");
+                        reprompt();
+
+                    });
+
+                }
+
+                else {
+                    console.log("Sorry, there's not enough in stock!");
+                     
+                    reprompt();
+                }
             });
-
-        } else {
-            console.log("Sorry, there's not enough in stock!");
-        }
-
-        reprompt();
-    }),
 
         //asks if they would like to purchase another item
         function reprompt() {
@@ -111,11 +114,12 @@ function start() {
                 message: "Would you like to purchase another item?"
             }]).then(function (ans) {
                 if (ans.reply) {
+                    start();
                 } else {
                     console.log("Come back again soon!");
+                    connection.end();
                 }
-            });
-        };
+            })
+        }
+    })
 }
-
-start();
