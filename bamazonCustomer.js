@@ -14,11 +14,11 @@ var connection = mysql.createConnection({
     // Your password
     password: "root",
     database: "bamazon_db"
-})
+});
 
 function start() {
     // connect to the mysql server and sql database
-    connection.query("SELECT * FROM Products", function (err, res) {
+    connection.query("SELECT * FROM products", function (err, res) {
         if (err) throw err;
 
         console.log("Welcome to Bamazon!");
@@ -32,20 +32,18 @@ function start() {
             {
                 type: "input",
                 name: "id",
-                message: "What is the ID of theh product you would like to buy?",
+                message: "What is the ID of the product you would like to buy?",
                 validate: function (value) {
                     if (isNaN(value) === false) {
                         return true;
                     }
                     return false;
                 }
-            }
-        },
-
+            },
             {
                 type: "input",
                 name: "quantity",
-                message: "How many units of the product would you like to buy?",
+                message: "How many would you like to buy?",
                 validate: function (value) {
                     if (isNaN(value) === false) {
                         return true;
@@ -53,28 +51,57 @@ function start() {
                     return false;
                 }
             }
+        ])
+        // .then(function (input) {
+        //     var item = (input.id) - 1;
+        //     var numberUnits = parseInt(input.quantity);
+        //     var totalPurchase = parseFloat(((res[item].price) * numberUnits).toFixed(2));
 
-        .then(function (ans) {
-            var item = (ans.id) - 1;
-            var numberUnits = parseInt(ans.quantity);
-            var totalPurchase = parseFloat(((res[item].price) * numberUnits).toFixed(2));
+        //check if number of items are available
+        // if (res[item].stock_quantity - numberUnits) {
+        //     connection.query("UPDATE products SET ? WHERE ?", [
+        //         { stock_quantity: (res[item].stock_quantity - numberUnits) },
+        //         { ID: ans.id }
+        //     ], function (err, result) {
+        //         if (err) throw err;
 
-            //check if number of items are available
-            if (res[item].stock_quantity - numberUnits) {
-                connection.query("UPDATE products SET ? WHERE ?", [
-                    { stock_quantity: (res[item].stock_quantity - numberUnits) },
-                    { ID: ans.id }
-                ], function (err, result) {
-                    if (err) throw err;
-                    console.log("YAY!  Your total is $" + totalPurchase.toFixed(2) + ". Your items will be shipped to you within 5 business days");
-                });
+        var item = input.id;
+        var quantity = input.stock_quantity;
 
-            } else {
-                console.log("Sorry, there's not enough in stock!");
-            }
+        if (data.length === 0) {
+            console.log("ERROR: Invalid Item. Please select a valid item.");
+            displayInventory();
 
-            reprompt();
-        }),
+        } else {
+            var productData = data[0];
+            // consolelog.("productData = " + JSON.stringify(productData));
+            // consolelog.("productData.stock_quantity = " + productData.stock_quantity);
+        }
+
+        // If the quantity requested is in stock
+        if (quantity <= product.stock_quantity) {
+            console.log("Congratulations!  The item you requested is in stock!");
+
+
+            // Update the product quantity string
+            var updateProductQuantity = 'UPDATE products SET stock_quantity = ' + (product.stock_quantity - quantity) + ' WHERE id = " ' + item;
+
+            // Update the inventory
+            connection.query(updateProductQuantity, function (err, data) {
+                if (err) throw err;
+
+                // } = 'UPDATE products SET stock_quantity = ' + (product))
+                console.log("YAY!  Your total is $" + product.price * quantity + ". Thank you for shopping with Bamazon.");
+
+                connection.end();
+            });
+
+        } else {
+            console.log("Sorry, there's not enough in stock!");
+        }
+
+        reprompt();
+    }),
 
         //asks if they would like to purchase another item
         function reprompt() {
@@ -88,7 +115,7 @@ function start() {
                     console.log("Come back again soon!");
                 }
             });
-        });
-    }
+        };
+}
 
 start();
